@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Scanner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .camera-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            border: 2px dashed #dee2e6;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .captured-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 13px;
+        }
+
+        .camera-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #6c757d;
+        }
+
+        .camera-icon {
+            width: 60px;
+            height: 60px;
+            background: #e9ecef;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #fd746c 0%, #ff9068 100%);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 5px 15px rgba(253, 116, 108, 0.4);
+        }
+
+        .results-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .results-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .result-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 16px;
+            color: #212529;
+            font-weight: 500;
+            font-family: monospace;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Check Scanner</h1>
+            <p>Capture and process bank checks</p>
+        </div>
+        
+        <div class="content">
+            <div class="camera-section">
+                <div class="camera-container" id="cameraContainer">
+                    <div class="camera-placeholder" id="placeholder">
+                        <div class="camera-icon">📷</div>
+                        <p>Tap to start camera</p>
+                    </div>
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas"></canvas>
+                </div>
+                
+                <button class="btn" id="startCamera">Start Camera</button>
+                <button class="btn btn-secondary" id="captureBtn" disabled>Capture Check</button>
+                <button class="btn" id="retakeBtn" style="display: none;">Retake Photo</button>
+            </div>
+
+            <div id="results" style="display: none;">
+                <div class="results-section">
+                    <h3>🔍 Scan Results</h3>
+                    <div class="result-item">
+                        <div class="result-label">MICR Line</div>
+                        <div class="result-value" id="micrResult">Processing...</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Amount</div>
+                        <div class="result-value" id="amountResult">Processing...</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Bank Routing</div>
+                        <div class="result-value" id="routingResult">Processing...</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Account Number</div>
+                        <div class="result-value" id="accountResult">Processing...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing check image...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let stream = null;
+        let capturedImage = null;
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startCameraBtn = document.getElementById('startCamera');
+        const captureBtn = document.getElementById('captureBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const placeholder = document.getElementById('placeholder');
+        const cameraContainer = document.getElementById('cameraContainer');
+        const results = document.getElementById('results');
+        const loading = document.getElementById('loading');
+
+        // Start camera
+        startCameraBtn.addEventListener('click', async () => {
+            try {
+                // Request camera access with high resolution for better text recognition
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment', // Use back camera on mobile
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+
+                video.srcObject = stream;
+                video.style.display = 'block';
+                placeholder.style.display = 'none';
+                startCameraBtn.style.display = 'none';
+                captureBtn.disabled = false;
+
+                // Show success message
+                showMessage('Camera started! Position check in frame and tap capture.', 'success');
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                showMessage('Camera access denied. Please allow camera permissions.', 'error');
+            }
+        });
+
+        // Capture image
+        captureBtn.addEventListener('click', () => {
+            if (!stream) return;
+
+            // Set canvas size to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw video frame to canvas
+            ctx.drawImage(video, 0, 0);
+
+            // Get image data
+            capturedImage = canvas.toDataURL('image/jpeg', 0.8);
+
+            // Stop camera stream
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+
+            // Show captured image
+            const img = document.createElement('img');
+            img.src = capturedImage;
+            img.className = 'captured-image';
+            
+            cameraContainer.innerHTML = '';
+            cameraContainer.appendChild(img);
+
+            // Update UI
+            captureBtn.style.display = 'none';
+            retakeBtn.style.display = 'block';
+
+            // Process the image
+            processCheckImage();
+        });
+
+        // Retake photo
+        retakeBtn.addEventListener('click', () => {
+            // Reset UI
+            cameraContainer.innerHTML = `
+                <div class="camera-placeholder" id="placeholder">
+                    <div class="camera-icon">📷</div>
+                    <p>Tap to start camera</p>
+                </div>
+                <video id="video" autoplay playsinline></video>
+                <canvas id="canvas"></canvas>
+            `;
+            
+            startCameraBtn.style.display = 'block';
+            retakeBtn.style.display = 'none';
+            captureBtn.style.display = 'block';
+            captureBtn.disabled = true;
+            results.style.display = 'none';
+            
+            // Re-assign elements after recreating DOM
+            video = document.getElementById('video');
+            placeholder = document.getElementById('placeholder');
+        });
+
+        // Simulate check processing (in a real app, this would use OCR/ML services)
+        function processCheckImage() {
+            loading.style.display = 'block';
+            results.style.display = 'none';
+
+            // Simulate processing delay
+            setTimeout(() => {
+                loading.style.display = 'none';
+                results.style.display = 'block';
+
+                // Simulate MICR line recognition
+                const micrData = generateMockMICR();
+                document.getElementById('micrResult').textContent = micrData.micr;
+                document.getElementById('routingResult').textContent = micrData.routing;
+                document.getElementById('accountResult').textContent = micrData.account;
+                
+                // Simulate amount recognition
+                const amount = generateMockAmount();
+                document.getElementById('amountResult').textContent = amount;
+
+                showMessage('Check processed successfully!', 'success');
+            }, 2000);
+        }
+
+        // Generate mock MICR data
+        function generateMockMICR() {
+            const routing = Math.floor(100000000 + Math.random() * 900000000).toString();
+            const account = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+            const checkNum = Math.floor(1000 + Math.random() * 9000).toString();
+            
+            return {
+                micr: `⑆${routing}⑆ ${account}⑈ ${checkNum}`,
+                routing: routing,
+                account: account
+            };
+        }
+
+        // Generate mock amount
+        function generateMockAmount() {
+            const amounts = ['$125.50', '$1,250.00', '$89.99', '$2,500.00', '$750.25'];
+            return amounts[Math.floor(Math.random() * amounts.length)];
+        }
+
+        // Show message
+        function showMessage(text, type) {
+            const existing = document.querySelector('.error, .success');
+            if (existing) existing.remove();
+
+            const message = document.createElement('div');
+            message.className = type;
+            message.textContent = text;
+            
+            const content = document.querySelector('.content');
+            content.insertBefore(message, content.firstChild);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (message.parentNode) {
+                    message.remove();
+                }
+            }, 5000);
+        }
+
+        // Check for camera support
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showMessage('Camera not supported on this device/browser.', 'error');
+            startCameraBtn.disabled = true;
+        }
+    </script>
+</body>
+</html>
